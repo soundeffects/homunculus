@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::{camera::MainCameraState, input::UserAction};
+use crate::{camera::MainCameraState, input::GeneralInput};
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -22,11 +22,8 @@ fn setup_character(
     // Spawn character
     let character_id = commands
         .spawn((
-            SceneBundle {
-                scene: asset_server.load("humanoid.glb#Scene0"),
-                transform: Transform::from_xyz(0.0, 1.0, 0.0),
-                ..default()
-            },
+            SceneRoot(asset_server.load("humanoid.glb#Scene0")),
+            Transform::from_xyz(0.0, 1.0, 0.0),
             Character::default(),
             RigidBody::Dynamic,
             Collider::capsule_endpoints(0.2, Vec3::new(0.0, 0.2, 0.0), Vec3::new(0.0, 1.8, 0.0)),
@@ -43,20 +40,20 @@ fn setup_character(
 fn apply_physics(
     camera_state: ResMut<MainCameraState>,
     mut characters: Query<(&Character, &mut LinearVelocity, &mut AngularVelocity)>,
-    action_state: Res<ActionState<UserAction>>,
+    action_state: Res<ActionState<GeneralInput>>,
     time: Res<Time>,
 ) {
     if let Ok((character, mut linear_velocity, mut angular_velocity)) =
         characters.get_mut(camera_state.focus)
     {
-        let pan = action_state.axis_pair(&UserAction::PanCamera);
-        let zoom = action_state.value(&UserAction::Zoom);
-        let movement = action_state.axis_pair(&UserAction::Move);
+        let pan = action_state.axis_pair(&GeneralInput::PanCamera);
+        let zoom = action_state.value(&GeneralInput::Zoom);
+        let movement = action_state.axis_pair(&GeneralInput::Move);
 
         let target_rotation = Quat::from_rotation_y(PI + camera_state.yaw());
 
         // Smoothly interpolate current rotation to target rotation
-        let rotation_step = character.rotation_speed * time.delta_seconds();
+        let rotation_step = character.rotation_speed * time.delta_secs();
 
         //character_transform.rotation = character_transform
         //    .rotation
@@ -65,7 +62,7 @@ fn apply_physics(
         // Move relative to camera's orientation
         let velocity_input = Vec3::new(movement.x, 0.0, movement.y).normalize_or_zero();
         let target_velocity = target_rotation * velocity_input * character.lateral_speed;
-        let velocity_step = character.lateral_acceleration * time.delta_seconds();
+        let velocity_step = character.lateral_acceleration * time.delta_secs();
         linear_velocity.x = linear_velocity.x.lerp(target_velocity.x, velocity_step);
         linear_velocity.z = linear_velocity.z.lerp(target_velocity.z, velocity_step);
 

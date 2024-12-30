@@ -5,16 +5,16 @@ pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(InputManagerPlugin::<UserAction>::default())
-            .init_resource::<ActionState<UserAction>>()
-            .insert_resource(UserAction::personalized_input_map())
+        app.add_plugins(InputManagerPlugin::<GeneralInput>::default())
+            .init_resource::<ActionState<GeneralInput>>()
+            .insert_resource(GeneralInput::personalized_input_map())
             .add_systems(Startup, hide_cursor_on_setup)
             .add_systems(Update, toggle_cursor_visibility);
     }
 }
 
 #[derive(Actionlike, Reflect, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum UserAction {
+pub enum GeneralInput {
     #[actionlike(DualAxis)]
     Move,
     #[actionlike(DualAxis)]
@@ -24,14 +24,14 @@ pub enum UserAction {
     Escape,
 }
 
-impl UserAction {
+impl GeneralInput {
     pub fn default_input_map() -> InputMap<Self> {
         InputMap::default()
             .with_dual_axis(Self::Move, GamepadStick::LEFT)
             .with_dual_axis(Self::PanCamera, GamepadStick::RIGHT)
-            .with_axis(Self::Zoom, GamepadVirtualAxis::DPAD_Y)
-            .with(Self::Escape, GamepadButtonType::Select)
-            .with_dual_axis(Self::Move, KeyboardVirtualDPad::WASD)
+            .with_axis(Self::Zoom, VirtualAxis::dpad_y())
+            .with(Self::Escape, GamepadButton::Select)
+            .with_dual_axis(Self::Move, VirtualDPad::wasd())
             .with_dual_axis(Self::PanCamera, MouseMove::default())
             .with_axis(Self::Zoom, MouseScrollAxis::Y)
             .with(Self::Escape, KeyCode::Escape)
@@ -42,29 +42,29 @@ impl UserAction {
         map.clear_action(&Self::Move);
         map.with_dual_axis(
             Self::Move,
-            KeyboardVirtualDPad::new(KeyCode::KeyH, KeyCode::KeyS, KeyCode::KeyT, KeyCode::KeyA),
+            VirtualDPad::new(KeyCode::KeyH, KeyCode::KeyS, KeyCode::KeyA, KeyCode::KeyT),
         )
     }
 }
 
 fn hide_cursor_on_setup(mut windows: Query<&mut Window>) {
     let mut window = windows.single_mut();
-    window.cursor.grab_mode = CursorGrabMode::Confined;
-    window.cursor.visible = false;
+    window.cursor_options.grab_mode = CursorGrabMode::Confined;
+    window.cursor_options.visible = false;
 }
 
 fn toggle_cursor_visibility(
-    action_state: Res<ActionState<UserAction>>,
+    action_state: Res<ActionState<GeneralInput>>,
     mut windows: Query<&mut Window>,
 ) {
-    if action_state.just_pressed(&UserAction::Escape) {
+    if action_state.just_pressed(&GeneralInput::Escape) {
         let mut window = windows.single_mut();
-        if window.cursor.grab_mode == CursorGrabMode::Confined {
-            window.cursor.grab_mode = CursorGrabMode::None;
-            window.cursor.visible = true;
+        if window.cursor_options.grab_mode == CursorGrabMode::Confined {
+            window.cursor_options.grab_mode = CursorGrabMode::None;
+            window.cursor_options.visible = true;
         } else {
-            window.cursor.grab_mode = CursorGrabMode::Confined;
-            window.cursor.visible = false;
+            window.cursor_options.grab_mode = CursorGrabMode::Confined;
+            window.cursor_options.visible = false;
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{character::Character, input::UserAction};
+use crate::{character::Character, input::GeneralInput};
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -57,7 +57,7 @@ impl MainCameraState {
 struct MainCamera;
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn((Camera3dBundle::default(), MainCamera));
+    commands.spawn((Camera3d::default(), MainCamera));
 }
 
 // New system to handle camera orbiting
@@ -65,7 +65,7 @@ fn camera_following(
     mut cameras: Query<&mut Transform, With<MainCamera>>,
     mut characters: Query<(&Character, &Transform), Without<MainCamera>>,
     mut camera_state: ResMut<MainCameraState>,
-    action_state: Res<ActionState<UserAction>>,
+    action_state: Res<ActionState<GeneralInput>>,
     time: Res<Time>,
 ) {
     if let Ok((character, character_transform)) = characters.get_mut(camera_state.focus) {
@@ -73,13 +73,13 @@ fn camera_following(
         let mut camera_transform = cameras.single_mut();
 
         // Get action data
-        let pan = action_state.axis_pair(&UserAction::PanCamera);
-        let zoom = action_state.value(&UserAction::Zoom);
+        let pan = action_state.axis_pair(&GeneralInput::PanCamera);
+        let zoom = action_state.value(&GeneralInput::Zoom);
 
         // Update yaw, pitch, and distance based on mouse movement and scroll
-        camera_state.yaw -= pan.x * camera_state.pan_sensitivity.x * time.delta_seconds();
-        camera_state.pitch += pan.y * camera_state.pan_sensitivity.y * time.delta_seconds();
-        camera_state.distance *= 1. - zoom * camera_state.zoom_sensitivity * time.delta_seconds();
+        camera_state.yaw -= pan.x * camera_state.pan_sensitivity.x * time.delta_secs();
+        camera_state.pitch += pan.y * camera_state.pan_sensitivity.y * time.delta_secs();
+        camera_state.distance *= 1. - zoom * camera_state.zoom_sensitivity * time.delta_secs();
 
         // Clamp pitch to prevent camera flipping
         camera_state.pitch = camera_state.pitch.clamp(-1.0, 1.0);
@@ -95,7 +95,7 @@ fn camera_following(
         let head_position =
             character_transform.translation + Vec3::new(0.0, character.height(), 0.0);
         let target_position = head_position + zoom_offset;
-        let focus_step = camera_state.focus_speed * time.delta_seconds();
+        let focus_step = camera_state.focus_speed * time.delta_secs();
         camera_transform.translation = camera_transform
             .translation
             .lerp(target_position, focus_step);
